@@ -64,17 +64,24 @@ If you were to test this function, what areas or scenarios would you focus on, a
 
 ## 1) Code Review Findings
 ### Critical bugs
-- 
+- Type error vulnerability. The function assumes every item in the list is a string. If the list contains None, an integer, or a dictionary, the program will crash with a TypeError because it cannot perform an in check on non-string types.
+- Extreme False Positives. The logic "is there an @ symbol" is not a validation check. Strings like "@@@", "admin@", or "me@localhost" are counted as "valid," which will lead to database corruption or failed mail deliveries later.
 
 ### Edge cases & risks
-- 
+- Missing Domain Suffix: The code treats user@domain as valid. In real-world scenarios, a valid email almost always requires a Top-Level Domain (e.g., .com, .net).
+- Whitespace Issues: An email like " test@example.com " might be considered valid here but fail in a login or mailing system because the code doesn't strip() leading or trailing spaces.
+- Empty/Malformed Strings: An empty string "" passes the loop but a single "@" would be counted as a valid email address.
 
 ### Code quality / design issues
-- 
+- Over-Simplified Logic: Using a simple membership test (in) for complex data like an email address violates the principle of "Least Astonishment"—a user expects "Valid" to mean "Usable."
+- Performance: For extremely large datasets, a manual for loop is less efficient than Python’s built-in generator expressions.
 
 ## 2) Proposed Fixes / Improvements
 ### Summary of changes
-- 
+- Regex Integration: Replaced the simple @ check with a Regular Expression to ensure the email follows a username@domain.tld structure.
+- Type Guarding: Added a check to ensure each element is a string before processing, preventing runtime crashes on "dirty" data.
+- Whitespace Sanitization: Included .strip() to handle emails that accidentally include spaces.
+- Input Validation: Added a guard clause to handle cases where the input emails might not be a list.
 
 ### Corrected code
 See `correct_task2.py`
@@ -84,16 +91,22 @@ See `correct_task2.py`
 
 ### Testing Considerations
 If you were to test this function, what areas or scenarios would you focus on, and why?
+- Non-String Elements: Pass a list like ["a@b.com", None, 123]. The original code would crash; the test ensures the new code skips them safely.
+- No-Dot Scenarios: Pass "user@domain". This should be marked invalid to ensure the regex is correctly identifying the lack of a TLD.
+- Special Characters: Test strings like "user name@example.com" (with a space) or "user@@example.com". These should fail validation to ensure data cleanliness.
+- Empty List: Verify that an empty input returns 0 without errors.
 
 ## 3) Explanation Review & Rewrite
 ### AI-generated explanation (original)
 > This function counts the number of valid email addresses in the input list. It safely ignores invalid entries and handles empty input correctly.
 
 ### Issues in original explanation
-- 
+- False Claim of Safety: It claims to "safely ignore invalid entries," but it actually crashes if an entry is not a string.
+- Inaccurate Definition of "Valid": It implies a level of validation (checking for a real email) that the code does not actually perform.
+- Logical Oversight: It doesn't mention that the function will accept nonsensical strings like "@@@@" as valid.
 
 ### Rewritten explanation
-- 
+- This function performs a superficial check for the presence of the "@" symbol to identify email addresses, but it lacks the logic required to verify actual email validity. It is highly susceptible to TypeErrors if the input contains non-string data and fails to filter out malformed entries that lack a proper domain or suffix. The original logic provides a false sense of data integrity by counting any string containing an "@" as a valid, usable email address.
 
 ## 4) Final Judgment
 - Decision: Approve / Request Changes / Reject
