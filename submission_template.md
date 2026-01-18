@@ -2,7 +2,7 @@
 
 ## Candidate
 - Name: Ian Koech
-- Approximate time spent:  
+- Approximate time spent: 1hr 10 minutes 
 
 ---
 
