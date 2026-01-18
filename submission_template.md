@@ -119,17 +119,23 @@ If you were to test this function, what areas or scenarios would you focus on, a
 
 ## 1) Code Review Findings
 ### Critical bugs
-- 
+- `ZeroDivisionCrash` , If an empty list [] is passed, count becomes 0, causing the program to crash with a `ZeroDivisionError` on the return statement.
+- Mathematical `Dilution Error`,  The count is set to the length of the entire input list, but the total only sums non-null values.
+- Unchecked Type Casting, The code calls float(v) without a try/except block. If the list contains a string that cannot be converted, the function will crash with a ValueError
 
 ### Edge cases & risks
-- 
+- Empty or All-None Lists, If the list contains only None values, the code still attempts to divide by the original length, resulting in 0 / len, which might be mathematically misleading or crash if the list is empty.
+- Input Type Integrity, The function does not verify if the input is actually a list. Passing a single number or a string will cause an iteration error.
 
 ### Code quality / design issues
-- 
+- Static Denominator, Calculating the count at the start is a rigid design choice that fails to account for the filtering happening inside the loop.
+- Lack of Resilience, The function is "brittle", it assumes the data is either a valid number or None, with no middle ground for "dirty" data.
 
 ## 2) Proposed Fixes / Improvements
 ### Summary of changes
-- 
+- Synchronized Counting, Updated the logic to only increment the counter (or use the length of a filtered list) when a value is successfully processed.
+- Error Trapping, Added a try/except block around the float() conversion to gracefully skip non-numeric strings instead of crashing.
+- Zero-State Handling, Added guard clauses to return 0.0 if the list is empty or if no valid measurements are found after filtering.
 
 ### Corrected code
 See `correct_task3.py`
@@ -138,17 +144,22 @@ See `correct_task3.py`
 
 ### Testing Considerations
 If you were to test this function, what areas or scenarios would you focus on, and why?
-
+- Mixed Data Types, Pass a list like [10, "20", "invalid", None]. This tests if the function can extract the 10 and 20, skip the "invalid" string without crashing, and ignore the None.
+- The "All None" Test, Pass [None, None]. This verifies that the function doesn't return 0.0 due to a dilution error, but rather handles it as a "no data" scenario.
+- Empty Dataset,  Pass [] to ensure the ZeroDivisionError has been successfully patched.
+- Large Floating Point Precision, Test with very small or very large decimals to ensure float() conversion maintains necessary precision.
 
 ## 3) Explanation Review & Rewrite
 ### AI-generated explanation (original)
 > This function calculates the average of valid measurements by ignoring missing values (None) and averaging the remaining values. It safely handles mixed input types and ensures an accurate average
 
 ### Issues in original explanation
-- 
+- False Claim of Accuracy, It claims to "ensure an accurate average," yet the math is fundamentally broken because it divides by the wrong count.
+- False Claim of Safety, It claims to "safely handle mixed input types," but it will actually crash if it encounters a non-numeric string or an empty list.
+- Misleading Logic, It implies None is the only "invalid" type, ignoring other potential data errors.
 
 ### Rewritten explanation
-- 
+- This function attempts to average a list of measurements but contains a critical calculation flaw: it includes missing values (None) in the divisor while excluding them from the dividend. This results in an artificially deflated average. Additionally, the function is not "safe" for production use, as it lacks error handling for non-numeric strings and will trigger a fatal crash if provided with an empty dataset. A robust version must synchronize the count with the valid entries and implement defensive type-casting to ensure mathematical integrity and application stability.
 
 ## 4) Final Judgment
 - Decision: Approve / Request Changes / Reject
